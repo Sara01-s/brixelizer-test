@@ -16,7 +16,7 @@ struct WindowInfo {
 
 class Window {
 public:
-	std::wstring ToWide(std::string_view str) {
+	std::wstring ToWide(std::string_view str) const noexcept {
 		int size = MultiByteToWideChar(
 			CP_UTF8, 0,
 			str.data(),
@@ -79,5 +79,5 @@ public:
 	HWND GetWindowHandle() const noexcept { return m_Handle; }
 
 private:
-	HWND m_Handle = nullptr;
+	HWND m_Handle { nullptr };
 };

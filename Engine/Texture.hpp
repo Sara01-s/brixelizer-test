@@ -10,7 +10,7 @@ public:
 	static ID3D12Resource* CreateTexture(
 		ID3D12Device* device, 
 		ID3D12GraphicsCommandList* cmdList, 
-		const std::string& path, 
+		std::string const& path, 
 		Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer
 	);
 

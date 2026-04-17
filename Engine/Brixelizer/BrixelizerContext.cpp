@@ -18,18 +18,18 @@ namespace Brixelizer {
 		}
 		BRIX_LOG("FfxContext::Initialize OK");
 
-		FfxBrixelizerContextDescription desc {};
-		desc.sdfCenter[0] = 0.0f;
-		desc.sdfCenter[1] = 0.0f;
-		desc.sdfCenter[2] = 0.0f;
-		desc.numCascades  = MAX_CASCADES;
-		desc.flags        = static_cast<FfxBrixelizerContextFlags>(0);
+		FfxBrixelizerContextDescription brixelizerContextDesc{};
+		brixelizerContextDesc.sdfCenter[0] = 0.0f;
+		brixelizerContextDesc.sdfCenter[1] = 0.0f;
+		brixelizerContextDesc.sdfCenter[2] = 0.0f;
+		brixelizerContextDesc.numCascades  = MAX_CASCADES;
+		brixelizerContextDesc.flags        = static_cast<FfxBrixelizerContextFlags>(0);
 
 		BRIX_LOGF("MAX_CASCADES = %u", MAX_CASCADES);
 
-		uint32_t numCascadeResources {};
-		for (uint32_t i {}; i < desc.numCascades; i++) {
-			FfxBrixelizerCascadeDescription* const cascadeDesc = &desc.cascadeDescs[i];
+		uint32_t numCascadeResources{};
+		for (uint32_t i = 0; i < brixelizerContextDesc.numCascades; i++) {
+			FfxBrixelizerCascadeDescription* const cascadeDesc = &brixelizerContextDesc.cascadeDescs[i];
 			cascadeDesc->flags     = static_cast<FfxBrixelizerCascadeFlag>(FFX_BRIXELIZER_CASCADE_STATIC | FFX_BRIXELIZER_CASCADE_DYNAMIC);
 			cascadeDesc->voxelSize = 0.2f * (1 << i);
 
@@ -50,11 +50,11 @@ namespace Brixelizer {
 
 		BRIX_LOGF("numCascadeResources = %u", numCascadeResources);
 		BRIX_LOGF("FFX_BRIXELIZER_MAX_CASCADES = %u", FFX_BRIXELIZER_MAX_CASCADES);
-		BRIX_LOGF("FFX_BRIXELIZER_CASCADE_AABB_TREE_SIZE = %u bytes (%.2f MB)", 
+		BRIX_LOGF("FFX_BRIXELIZER_CASCADE_AABB_TREE_SIZE = %llu bytes (%.2f MB)", 
 			FFX_BRIXELIZER_CASCADE_AABB_TREE_SIZE, FFX_BRIXELIZER_CASCADE_AABB_TREE_SIZE / (1024.0f * 1024.0f));
-		BRIX_LOGF("FFX_BRIXELIZER_CASCADE_BRICK_MAP_SIZE = %u bytes (%.2f MB)",
+		BRIX_LOGF("FFX_BRIXELIZER_CASCADE_BRICK_MAP_SIZE = %llu bytes (%.2f MB)",
 			FFX_BRIXELIZER_CASCADE_BRICK_MAP_SIZE, FFX_BRIXELIZER_CASCADE_BRICK_MAP_SIZE / (1024.0f * 1024.0f));
-		BRIX_LOGF("FFX_BRIXELIZER_BRICK_AABBS_SIZE       = %u bytes (%.2f MB)",
+		BRIX_LOGF("FFX_BRIXELIZER_BRICK_AABBS_SIZE       = %llu bytes (%.2f MB)",
 			FFX_BRIXELIZER_BRICK_AABBS_SIZE, FFX_BRIXELIZER_BRICK_AABBS_SIZE / (1024.0f * 1024.0f));
 		BRIX_LOGF("FFX_BRIXELIZER_STATIC_CONFIG_SDF_ATLAS_SIZE = %u (3D: %.2f MB)",
 			FFX_BRIXELIZER_STATIC_CONFIG_SDF_ATLAS_SIZE,
@@ -62,11 +62,11 @@ namespace Brixelizer {
 			FFX_BRIXELIZER_STATIC_CONFIG_SDF_ATLAS_SIZE *
 			FFX_BRIXELIZER_STATIC_CONFIG_SDF_ATLAS_SIZE / (1024.0f * 1024.0f));
 
-		desc.backendInterface = m_FfxContext.GetFfxInterface();
+		brixelizerContextDesc.backendInterface = m_FfxContext.GetFfxInterface();
 
 		BRIX_LOG("ffxBrixelizerContextCreate...");
-		FfxErrorCode const error = ffxBrixelizerContextCreate(&desc, &m_BrixelizerContext);
-		BRIX_LOGF("ffxBrixelizerContextCreate result = %d (0=OK)", static_cast<int>(error));
+		FfxErrorCode const error = ffxBrixelizerContextCreate(&brixelizerContextDesc, &m_BrixelizerContext);
+		BRIX_LOGF("ffxBrixelizerContextCreate result = %d (0 = OK)", static_cast<int>(error));
 		assert(error == FFX_OK);
 
 		BRIX_LOG("CreateSdfAtlas...");
@@ -75,7 +75,9 @@ namespace Brixelizer {
 
 		BRIX_LOG("CreateBrickAABBs...");
 		m_BrickAABBs = CreateCommittedBuffer(device, FFX_BRIXELIZER_BRICK_AABBS_SIZE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		if (m_BrickAABBs) m_BrickAABBs->SetName(L"Brixelizer_BrickAABBs");
+		if (m_BrickAABBs) {
+			m_BrickAABBs->SetName(L"Brixelizer_BrickAABBs");
+		}
 		BRIX_LOGF("CreateBrickAABBs %s", m_BrickAABBs ? "OK" : "FAILED (null)");
 
 		m_CascadeResourcesCount = numCascadeResources;
@@ -84,11 +86,15 @@ namespace Brixelizer {
 		for (uint32_t i = 0; i < FFX_BRIXELIZER_MAX_CASCADES; ++i) {
 			BRIX_LOGF("  cascade[%u] aabbTree...", i);
 			m_CascadeResources[i].aabbTree = CreateCommittedBuffer(device, FFX_BRIXELIZER_CASCADE_AABB_TREE_SIZE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-			if (m_CascadeResources[i].aabbTree) m_CascadeResources[i].aabbTree->SetName(L"Brixelizer_Cascade_AABBTree");
+			if (m_CascadeResources[i].aabbTree) {
+				m_CascadeResources[i].aabbTree->SetName(L"Brixelizer_Cascade_AABBTree");
+			} 
 			
 			BRIX_LOGF("  cascade[%u] brickMap...", i);
 			m_CascadeResources[i].brickMap = CreateCommittedBuffer(device, FFX_BRIXELIZER_CASCADE_BRICK_MAP_SIZE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-			if (m_CascadeResources[i].brickMap) m_CascadeResources[i].brickMap->SetName(L"Brixelizer_Cascade_BrickMap");
+			if (m_CascadeResources[i].brickMap) {
+				m_CascadeResources[i].brickMap->SetName(L"Brixelizer_Cascade_BrickMap");
+			}
 		}
 
 		BRIX_LOG("=== Constructor END ===");
@@ -109,7 +115,7 @@ namespace Brixelizer {
 		instanceDesc.aabb = { { aabb.min[0], aabb.min[1], aabb.min[2] },
 							  { aabb.max[0], aabb.max[1], aabb.max[2] } };
 
-		constexpr FfxFloat32x3x4 modelMatrix {
+		constexpr FfxFloat32x3x4 modelMatrix { // TODO: Satisfies Single Source of Truth?
 			1.0f, 0.0f, 0.0f, 0.0f,
 			0.0f, 1.0f, 0.0f, 0.0f,
 			0.0f, 0.0f, 1.0f, 0.0f
@@ -189,7 +195,7 @@ namespace Brixelizer {
 		m_Stats      = FfxBrixelizerStats{};
 		m_UpdateDesc = {};
 		m_BakedDesc  = {};
-		size_t scratchSize {};
+		size_t scratchSize{};
 
 		DirectX::XMFLOAT3 cameraPosition = camera.GetPosition();
 		m_UpdateDesc.frameIndex       = swapChainFrameIndex;
@@ -259,7 +265,7 @@ namespace Brixelizer {
 		}
 
 		{
-			std::vector<D3D12_RESOURCE_BARRIER> barriers;
+			std::vector<D3D12_RESOURCE_BARRIER> barriers{};
 
 			if (m_SdfAtlasState != D3D12_RESOURCE_STATE_UNORDERED_ACCESS) {
 				barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
@@ -327,7 +333,7 @@ namespace Brixelizer {
 		debugVisDesc.startCascadeIndex = m_StartCascadeIdx; // Static instances.
     	debugVisDesc.endCascadeIndex   = m_EndCascadeIdx;
 
-		debugVisDesc.renderWidth  = 1280; // DEBUG
+		debugVisDesc.renderWidth  = 1280; // FIXME: DEBUG
     	debugVisDesc.renderHeight = 720;
 
 		debugVisDesc.commandList = ffxGetCommandListDX12(cmdList);

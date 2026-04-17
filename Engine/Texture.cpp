@@ -6,6 +6,7 @@
 #include <iostream>
 #include <filesystem>
 #include <algorithm>
+#include <cassert>
 
 #include "Texture.hpp"
 
@@ -100,6 +101,7 @@ ID3D12Resource* Texture::CreateTexture(
 	);
 
 	if (FAILED(hr)) {
+		assert(false && "Failed to create committed resource for texture resource.");
 		return nullptr;
 	}
 
@@ -148,14 +150,14 @@ ID3D12Resource* Texture::CreateTexture(
 void Texture::CreateSrv(
 	ID3D12Device* device,
 	ID3D12DescriptorHeap* srvHeap,
-	ID3D12Resource* texRes,
+	ID3D12Resource* textureResource,
 	int index
 ) {
-	if (!texRes) {
+	if (!textureResource) {
 		return;
 	}
 
-	auto desc = texRes->GetDesc();
+	auto desc = textureResource->GetDesc();
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping         = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -169,5 +171,5 @@ void Texture::CreateSrv(
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(srvHeap->GetCPUDescriptorHandleForHeapStart());
 	hDescriptor.Offset(index, descriptorSize);
 
-	device->CreateShaderResourceView(texRes, &srvDesc, hDescriptor);
+	device->CreateShaderResourceView(textureResource, &srvDesc, hDescriptor);
 }

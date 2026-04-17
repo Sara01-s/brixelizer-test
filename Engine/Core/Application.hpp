@@ -42,11 +42,11 @@ namespace Core {
 		void QueueLayerTransition(Layer* from, std::unique_ptr<Layer> to);
 		std::vector<std::unique_ptr<Layer>>& GetLayerStack() { return m_LayerStack; }
 
-		DX12Manager&  GetDX()       noexcept { return m_Graphics; }
-		ImGuiManager& GetImgui()    noexcept { return m_Imgui; }
+		DX12Manager&  GetDX()    noexcept { return m_Graphics; }
+		ImGuiManager& GetImgui() noexcept { return m_Imgui; }
+		float GetTime() const noexcept { return m_Timer.GetElapsedTime(); }
 
 		static Application& Get();
-		static float GetTime();
 
 	private:
 		void DoFrame();

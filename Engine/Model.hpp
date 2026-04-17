@@ -103,11 +103,13 @@ private:
 					 aiScene const*                     scene,
 					 std::map<unsigned int, int> const& matMap)
 	{
-		for (unsigned int i = 0; i < node->mNumMeshes; ++i)
+		for (unsigned int i = 0; i < node->mNumMeshes; ++i) {
 			m_Meshes.push_back(BuildMesh(device, scene->mMeshes[node->mMeshes[i]], matMap));
+		}
 
-		for (unsigned int i = 0; i < node->mNumChildren; ++i)
+		for (unsigned int i = 0; i < node->mNumChildren; ++i) {
 			ProcessNode(device, node->mChildren[i], scene, matMap);
+		}
 	}
 
 	std::unique_ptr<Mesh> BuildMesh(ID3D12Device*                      device,
@@ -115,36 +117,38 @@ private:
 									std::map<unsigned int, int> const& matMap)
 	{
 		// Vertices.
-		std::vector<Vertex> vertices;
+		std::vector<Vertex> vertices{};
 		vertices.reserve(aiMesh->mNumVertices);
 
 		for (unsigned int i = 0; i < aiMesh->mNumVertices; ++i) {
-			Vertex v{};
-			v.position[0] = aiMesh->mVertices[i].x;
-			v.position[1] = aiMesh->mVertices[i].y;
-			v.position[2] = aiMesh->mVertices[i].z;
+			Vertex vertex{};
+			vertex.position[0] = aiMesh->mVertices[i].x;
+			vertex.position[1] = aiMesh->mVertices[i].y;
+			vertex.position[2] = aiMesh->mVertices[i].z;
 
 			if (aiMesh->HasNormals()) {
-				v.normal[0] = aiMesh->mNormals[i].x;
-				v.normal[1] = aiMesh->mNormals[i].y;
-				v.normal[2] = aiMesh->mNormals[i].z;
+				vertex.normal[0] = aiMesh->mNormals[i].x;
+				vertex.normal[1] = aiMesh->mNormals[i].y;
+				vertex.normal[2] = aiMesh->mNormals[i].z;
 			}
 
 			if (aiMesh->mTextureCoords[0]) {
-				v.texCoord[0] = aiMesh->mTextureCoords[0][i].x;
-				v.texCoord[1] = aiMesh->mTextureCoords[0][i].y;
+				vertex.texCoord[0] = aiMesh->mTextureCoords[0][i].x;
+				vertex.texCoord[1] = aiMesh->mTextureCoords[0][i].y;
 			}
 
-			vertices.push_back(v);
+			vertices.push_back(vertex);
 		}
 
 		// Indices.
-		std::vector<uint32_t> indices;
+		std::vector<uint32_t> indices{};
 		indices.reserve(aiMesh->mNumFaces * 3);
 
 		for (unsigned int i = 0; i < aiMesh->mNumFaces; ++i) {
 			aiFace const& face = aiMesh->mFaces[i];
+
 			assert(face.mNumIndices == 3);
+
 			indices.push_back(face.mIndices[0]);
 			indices.push_back(face.mIndices[1]);
 			indices.push_back(face.mIndices[2]);
@@ -157,9 +161,9 @@ private:
 		return std::make_unique<Mesh>(device, vertices, indices, texIdx);
 	}
 
-	std::string m_Directory {};
+	std::string m_Directory{};
 
-	std::vector<std::unique_ptr<Mesh>>   m_Meshes {};
-	std::vector<ComPtr<ID3D12Resource>>  m_Textures {};
-	std::vector<ComPtr<ID3D12Resource>>  m_UploadBuffers {};
+	std::vector<std::unique_ptr<Mesh>>   m_Meshes{};
+	std::vector<ComPtr<ID3D12Resource>>  m_Textures{};
+	std::vector<ComPtr<ID3D12Resource>>  m_UploadBuffers{};
 };

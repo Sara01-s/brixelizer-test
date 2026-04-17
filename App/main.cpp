@@ -4,7 +4,7 @@
 #include "Layers/AppLayer.hpp"
 
 int main() {
-	Core::ApplicationInfo appInfo {
+	Core::ApplicationInfo const appInfo {
 		.WindowInfo = {
 			.Title = "DirectX12 Renderer",
 			.Width = 1280,

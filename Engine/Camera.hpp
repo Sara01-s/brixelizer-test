@@ -123,14 +123,14 @@ private:
 	DirectX::XMFLOAT3 m_Right{};
 	DirectX::XMFLOAT3 m_Up{};
 
-	float m_Yaw   = 0.0f;
-	float m_Pitch = 0.0f;
+	float m_Yaw   { 0.0f };
+	float m_Pitch { 0.0f };
 
-	float m_MoveSpeed = 8.0f;
-	float m_MouseSensitivity = 0.002f;
+	float m_MoveSpeed { 8.0f };
+	float m_MouseSensitivity { 0.002f };
 
-	float m_FovY = DirectX::XM_PIDIV4; // 45°.
-	float m_AspectRatio = 16.0f / 9.0f;
-	float m_NearZ = 0.1f;
-	float m_FarZ = 1000.0f;
+	float m_FovY { DirectX::XM_PIDIV4 }; // 45°.
+	float m_AspectRatio { 16.0f / 9.0f };
+	float m_NearZ = { 0.1f };
+	float m_FarZ = { 1000.0f };
 };

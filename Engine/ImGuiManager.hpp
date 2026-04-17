@@ -48,5 +48,5 @@ public:
 	}
 
 private:
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_SrvHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_SrvHeap{};
 };

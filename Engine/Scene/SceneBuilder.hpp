@@ -23,7 +23,7 @@ class SceneBuilder {
 public:
 	explicit SceneBuilder(Camera& camera) : m_Camera(camera) {}
 
-	SceneConstants Build() const {
+	SceneConstants Build() const noexcept {
 		using namespace DirectX;
 
 		SceneConstants scene{};

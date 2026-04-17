@@ -51,13 +51,8 @@ namespace Core {
 	}
 
 	Application &Application::Get() {
-		assert(s_Application);
+		assert(s_Application && "Application Singleton is not initialized.");
 		return *s_Application;
-	}
-
-	float Application::GetTime() {
-		assert(false && "Not implemented.");
-		return 0.0f;
 	}
 
 	void Application::DoFrame() {

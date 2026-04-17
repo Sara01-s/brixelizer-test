@@ -8,7 +8,7 @@ namespace Input {
 
 	class UserInput {
 	public:
-		void OnEvent(Core::Event& event) {
+		void OnEvent(Core::Event& event) noexcept {
 			Core::EventDispatcher dispatcher(event);
 
 			dispatcher.Dispatch<Core::KeyPressedEvent>(
@@ -94,11 +94,11 @@ namespace Input {
 		}
 
 	private:
-		bool m_Keys[256] {};
-		bool m_MouseButtons[8] {};
+		bool m_Keys[256]{};
+		bool m_MouseButtons[8]{};
 
-		DirectX::XMFLOAT2 m_MousePosition {};
-		DirectX::XMFLOAT2 m_MouseDelta {};
+		DirectX::XMFLOAT2 m_MousePosition{};
+		DirectX::XMFLOAT2 m_MouseDelta{};
 	};
 
 }
