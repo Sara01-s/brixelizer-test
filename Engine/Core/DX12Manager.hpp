@@ -83,7 +83,7 @@ public:
 	ID3D12DescriptorHeap* const GetSrvHeap() const noexcept { return m_SrvDescriptorHeap.Get(); }
 	ComPtr<ID3D12Resource> GetCurrentRenderTarget() const noexcept { return m_RenderTargets[m_FrameIndex]; }
 
-	D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRTV() {
+	D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRTVHandle() {
 		D3D12_CPU_DESCRIPTOR_HANDLE handle = m_RtvHeap->GetCPUDescriptorHandleForHeapStart();
 		handle.ptr += static_cast<SIZE_T>(m_FrameIndex) * m_RtvDescriptorSize;
 		
@@ -199,23 +199,23 @@ private:
 	}
 
 	void InitAssets() {
-		for (UINT n = 0; n < FRAME_COUNT; n++) {
-			DX_THROW(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_CommandAllocators[n])));
+		for (UINT frame = 0; frame < FRAME_COUNT; frame++) {
+			DX_THROW(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_CommandAllocators[frame])));
 			
-			std::wstring const name = L"Command Allocator " + std::to_wstring(n);
-			m_CommandAllocators[n]->SetName(name.c_str());
+			std::wstring const name = L"Command Allocator " + std::to_wstring(frame);
+			m_CommandAllocators[frame]->SetName(name.c_str());
 		}
 
 		DX_THROW(m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_CommandAllocators[0].Get(), nullptr, IID_PPV_ARGS(&m_CommandList)));
 		m_CommandList->SetName(L"Main Command List");
 
 		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_RtvHeap->GetCPUDescriptorHandleForHeapStart();
-		for (UINT n = 0; n < FRAME_COUNT; n++) {
-			DX_THROW(m_SwapChain->GetBuffer(n, IID_PPV_ARGS(&m_RenderTargets[n])));
-			m_Device->CreateRenderTargetView(m_RenderTargets[n].Get(), nullptr, rtvHandle);
+		for (UINT frame = 0; frame < FRAME_COUNT; frame++) {
+			DX_THROW(m_SwapChain->GetBuffer(frame, IID_PPV_ARGS(&m_RenderTargets[frame])));
+			m_Device->CreateRenderTargetView(m_RenderTargets[frame].Get(), nullptr, rtvHandle);
 			
-			std::wstring const name = L"Render Target " + std::to_wstring(n);
-			m_RenderTargets[n]->SetName(name.c_str());
+			std::wstring const name = L"Render Target " + std::to_wstring(frame);
+			m_RenderTargets[frame]->SetName(name.c_str());
 			
 			rtvHandle.ptr += m_RtvDescriptorSize;
 		}
@@ -226,15 +226,15 @@ private:
 	}
 
 	void CreateDepthBuffer(HWND const hwnd) {
-		RECT rect;
+		RECT rect{};
 		GetClientRect(hwnd, &rect);
 
-		D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
+		D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc{};
 		dsvHeapDesc.NumDescriptors = 1;
 		dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 		DX_THROW(m_Device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_DsvHeap)));
 
-		D3D12_RESOURCE_DESC depthDesc = {};
+		D3D12_RESOURCE_DESC depthDesc{};
 		depthDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 		depthDesc.Width = std::max(1L, rect.right - rect.left);
 		depthDesc.Height = std::max(1L, rect.bottom - rect.top);
@@ -284,29 +284,29 @@ private:
 	void HandleDeviceRemoved(HRESULT const hr) {
 		if (hr == DXGI_ERROR_DEVICE_REMOVED && m_Device) {
 			HRESULT const reason = m_Device->GetDeviceRemovedReason();
-			std::cerr << "[GPU ERROR] Device Removed. Reason: 0x" << std::hex << reason << std::endl;
+			std::cerr << "[GPU ERROR] Device Removed. Reason: 0x" << std::hex << reason << '\n';
 		}
 	}
 
 private:
-	ComPtr<IDXGIFactory4> m_Factory;
-	ComPtr<ID3D12Device> m_Device;
-	ComPtr<ID3D12CommandQueue> m_CommandQueue;
-	ComPtr<IDXGISwapChain3> m_SwapChain;
-	ComPtr<ID3D12DescriptorHeap> m_RtvHeap;
-	ComPtr<ID3D12Resource> m_RenderTargets[FRAME_COUNT];
+	ComPtr<IDXGIFactory4> m_Factory{};
+	ComPtr<ID3D12Device> m_Device{};
+	ComPtr<ID3D12CommandQueue> m_CommandQueue{};
+	ComPtr<IDXGISwapChain3> m_SwapChain{};
+	ComPtr<ID3D12DescriptorHeap> m_RtvHeap{};
+	ComPtr<ID3D12Resource> m_RenderTargets[FRAME_COUNT]{};
 	
-	ComPtr<ID3D12CommandAllocator> m_CommandAllocators[FRAME_COUNT];
+	ComPtr<ID3D12CommandAllocator> m_CommandAllocators[FRAME_COUNT]{};
 	
-	ComPtr<ID3D12GraphicsCommandList> m_CommandList;
-	ComPtr<ID3D12Resource> m_DepthBuffer;
-	ComPtr<ID3D12DescriptorHeap> m_DsvHeap;
-	ComPtr<ID3D12DescriptorHeap> m_SrvDescriptorHeap;
+	ComPtr<ID3D12GraphicsCommandList> m_CommandList{};
+	ComPtr<ID3D12Resource> m_DepthBuffer{};
+	ComPtr<ID3D12DescriptorHeap> m_DsvHeap{};
+	ComPtr<ID3D12DescriptorHeap> m_SrvDescriptorHeap{};
 	
-	UINT m_RtvDescriptorSize = 0;
-	UINT m_FrameIndex = 0;
+	UINT m_RtvDescriptorSize { 0 };
+	UINT m_FrameIndex { 0 };
 	
-	HANDLE m_FenceEvent = nullptr;
-	ComPtr<ID3D12Fence> m_Fence;
-	UINT64 m_FenceValue = 0;
+	HANDLE m_FenceEvent { nullptr };
+	ComPtr<ID3D12Fence> m_Fence{};
+	UINT64 m_FenceValue { 0 };
 };

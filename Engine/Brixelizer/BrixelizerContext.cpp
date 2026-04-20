@@ -3,6 +3,9 @@
 
 #include <FidelityFX/host/ffx_brixelizer.h>
 
+#define FFX_CPU
+#include <Plugins/FidelityFX/include/FidelityFX/gpu/brixelizer/ffx_brixelizer_host_gpu_shared.h>
+
 #define BRIX_LOG(msg) OutputDebugStringA("[Brixelizer] " msg "\n")
 #define BRIX_LOGF(fmt, ...) do { char _buf[256]; sprintf_s(_buf, "[Brixelizer] " fmt "\n", __VA_ARGS__); OutputDebugStringA(_buf); } while(0)
 
@@ -31,7 +34,7 @@ namespace Brixelizer {
 		for (uint32_t i = 0; i < brixelizerContextDesc.numCascades; i++) {
 			FfxBrixelizerCascadeDescription* const cascadeDesc = &brixelizerContextDesc.cascadeDescs[i];
 			cascadeDesc->flags     = static_cast<FfxBrixelizerCascadeFlag>(FFX_BRIXELIZER_CASCADE_STATIC | FFX_BRIXELIZER_CASCADE_DYNAMIC);
-			cascadeDesc->voxelSize = 0.2f * (1 << i);
+			cascadeDesc->voxelSize = 0.2f * static_cast<float>(1 << i);
 
 			switch (cascadeDesc->flags & (FFX_BRIXELIZER_CASCADE_STATIC | FFX_BRIXELIZER_CASCADE_DYNAMIC)) {
 				case FFX_BRIXELIZER_CASCADE_STATIC:
@@ -97,16 +100,27 @@ namespace Brixelizer {
 			}
 		}
 
+		// Constants buffer.
+		size_t const bufferSize = (sizeof(FfxBrixelizerCascadeInfo) * FFX_BRIXELIZER_MAX_CASCADES + 255) & ~255;
+		m_ConstantsBuffer = CreateCommittedBuffer(device, bufferSize);
+		m_ConstantsBuffer->Map(0, nullptr, &m_MappedConstants);
+
 		BRIX_LOG("=== Constructor END ===");
 	}
 
 	BrixelizerContext::~BrixelizerContext() {
+		BRIX_LOG("=== Destructor START ===");
 		FfxErrorCode const error = ffxBrixelizerContextDestroy(&m_BrixelizerContext);
+		BRIX_LOGF("ffxBrixelizerContextDestroy result = %d", static_cast<int>(error));
 		assert(error == FFX_OK);
+		m_ConstantsBuffer->Unmap(0, nullptr);
+		BRIX_LOG("Constant Buffer memory unmapped");
+		BRIX_LOG("=== Destructor END ===");
 	}
 
 	[[nodiscard]]
 	MeshInstance BrixelizerContext::SubmitMeshInstance(Mesh const& mesh) {
+		BRIX_LOG("SubmitMeshInstance: START");
 		FfxBrixelizerInstanceDescription instanceDesc {};
 		FfxBrixelizerInstanceID instanceID = FFX_BRIXELIZER_INVALID_ID;
 
@@ -114,6 +128,9 @@ namespace Brixelizer {
 		AABB const& aabb = mesh.GetAABB();
 		instanceDesc.aabb = { { aabb.min[0], aabb.min[1], aabb.min[2] },
 							  { aabb.max[0], aabb.max[1], aabb.max[2] } };
+		
+		BRIX_LOGF("  Mesh AABB: Min(%.2f, %.2f, %.2f) Max(%.2f, %.2f, %.2f)", 
+			aabb.min[0], aabb.min[1], aabb.min[2], aabb.max[0], aabb.max[1], aabb.max[2]);
 
 		constexpr FfxFloat32x3x4 modelMatrix { // TODO: Satisfies Single Source of Truth?
 			1.0f, 0.0f, 0.0f, 0.0f,
@@ -147,13 +164,16 @@ namespace Brixelizer {
 		brixelizerIndexBufferDesc.outIndex = &indexBufferID;
 
 		FfxBrixelizerBufferDescription bufferDescs[2] = { brixelizerVertexBufferDesc, brixelizerIndexBufferDesc };
+		
+		BRIX_LOG("  ffxBrixelizerRegisterBuffers...");
 		FfxErrorCode const error = ffxBrixelizerRegisterBuffers(&m_BrixelizerContext, bufferDescs, 2u);
+		BRIX_LOGF("  result = %d, VB_ID = %u, IB_ID = %u", static_cast<int>(error), vertexBufferID, indexBufferID);
 		assert(error == FFX_OK);
 
 		instanceDesc.vertexBuffer       = vertexBufferID;
 		instanceDesc.vertexStride       = mesh.GetVertexStride();
 		instanceDesc.vertexBufferOffset = 0;
-		instanceDesc.vertexCount        = mesh.GetVertexCount();
+		instanceDesc.vertexCount         = mesh.GetVertexCount();
 		instanceDesc.vertexFormat       = VERTEX_FORMAT;
 		instanceDesc.indexFormat        = FFX_INDEX_TYPE_UINT32;
 		instanceDesc.indexBuffer        = indexBufferID;
@@ -162,25 +182,30 @@ namespace Brixelizer {
 		instanceDesc.flags              = FFX_BRIXELIZER_INSTANCE_FLAG_NONE;
 		instanceDesc.outInstanceID      = &instanceID;
 
+		BRIX_LOG("  ffxBrixelizerCreateInstances...");
 		FfxErrorCode const error2 = ffxBrixelizerCreateInstances(&m_BrixelizerContext, &instanceDesc, 1u);
+		BRIX_LOGF("  result = %d, InstanceID = %u", static_cast<int>(error2), instanceID);
 		assert(error2 == FFX_OK);
 
 		return MeshInstance { instanceID, vertexBufferID, indexBufferID };
 	}
 
 	void BrixelizerContext::UnloadMeshInstance(MeshInstance const& meshInstance) {
+		BRIX_LOGF("UnloadMeshInstance: ID %u", meshInstance.ID);
 		DeleteMeshInstance(meshInstance.ID);
 		UnregisterBuffer(meshInstance.VertexBufferID);
 		UnregisterBuffer(meshInstance.IndexBufferID);
 	}
 
 	void BrixelizerContext::UnregisterBuffer(uint32_t const bufferID) {
+		BRIX_LOGF("UnregisterBuffer: ID %u", bufferID);
 		uint32_t const buffersIDs[] = { bufferID };
 		FfxErrorCode const error = ffxBrixelizerUnregisterBuffers(&m_BrixelizerContext, buffersIDs, 1u);
 		assert(error == FFX_OK);
 	}
 
 	void BrixelizerContext::DeleteMeshInstance(uint32_t const meshInstanceId) {
+		BRIX_LOGF("DeleteMeshInstance: ID %u", meshInstanceId);
 		FfxErrorCode const error = ffxBrixelizerDeleteInstances(&m_BrixelizerContext, &meshInstanceId, 1u);
 		assert(error == FFX_OK);
 	}
@@ -224,7 +249,7 @@ namespace Brixelizer {
 		};
 		m_UpdateDesc.resources.brickAABBs = ffxGetResourceDX12(m_BrickAABBs.Get(), brickAABBsDesc, L"Brix_BrickAABBs", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 
-		for (uint32_t i {}; i < FFX_BRIXELIZER_MAX_CASCADES; ++i) {
+		for (uint32_t i = 0; i < FFX_BRIXELIZER_MAX_CASCADES; ++i) {
 			FfxResourceDescription const aabbTreeDesc = {
 				.type   = FFX_RESOURCE_TYPE_BUFFER,
 				.size   = FFX_BRIXELIZER_CASCADE_AABB_TREE_SIZE,
@@ -246,6 +271,7 @@ namespace Brixelizer {
 		m_UpdateDesc.outStats             = &m_Stats;
 
 		FfxErrorCode const bakeErr = ffxBrixelizerBakeUpdate(&m_BrixelizerContext, &m_UpdateDesc, &m_BakedDesc);
+		if (bakeErr != FFX_OK) BRIX_LOGF("ffxBrixelizerBakeUpdate FAILED: %d", static_cast<int>(bakeErr));
 		assert(bakeErr == FFX_OK);
 		
 		auto debugVisualizationDesc = BuildDebugVisualization(camera, cmdList, renderTarget);
@@ -297,6 +323,7 @@ namespace Brixelizer {
 
 		FfxResource const scratch = ffxGetResourceDX12(m_ScratchBuffer.Get(), scratchDesc, L"Brix_Scratch_Ffx", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 		FfxErrorCode const updateErr = ffxBrixelizerUpdate(&m_BrixelizerContext, &m_BakedDesc, scratch, ffxGetCommandListDX12(cmdList));
+		if (updateErr != FFX_OK) BRIX_LOGF("ffxBrixelizerUpdate FAILED: %d", static_cast<int>(updateErr));
 		assert(updateErr == FFX_OK);
 
 		{
@@ -306,6 +333,50 @@ namespace Brixelizer {
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 			cmdList->ResourceBarrier(1, &outBarrier);
 		}
+
+		FfxBrixelizerCascadeInfo cascadeData[FFX_BRIXELIZER_MAX_CASCADES];
+
+		DirectX::XMFLOAT3 sdfCenter = { m_UpdateDesc.sdfCenter[0], m_UpdateDesc.sdfCenter[1], m_UpdateDesc.sdfCenter[2] };
+
+		for (uint32_t i = 0; i < FFX_BRIXELIZER_MAX_CASCADES; i++) {
+			// Based on the parameters defined on the constructor.
+			float const voxelSize = 0.2f * static_cast<float>(1 << i);
+			
+			constexpr float scale = 128.0f;
+			float const gridSize = scale * voxelSize; // TODO: Play with scale.
+
+			FfxBrixelizerCascadeInfo& info = cascadeData[i];
+			
+			// AABB of the grid of the cascade.
+			info.grid_min[0] = sdfCenter.x - (gridSize * 0.5f);
+			info.grid_min[1] = sdfCenter.y - (gridSize * 0.5f);
+			info.grid_min[2] = sdfCenter.z - (gridSize * 0.5f);
+
+			info.grid_max[0] = sdfCenter.x + (gridSize * 0.5f);
+			info.grid_max[1] = sdfCenter.y + (gridSize * 0.5f);
+			info.grid_max[2] = sdfCenter.z + (gridSize * 0.5f);
+
+			// Scale Factors.
+			info.voxel_size  = voxelSize;
+			info.ivoxel_size = 1.0f / voxelSize;
+
+			// Based on the parameters defined on the constructor.
+			info.flags = FFX_BRIXELIZER_CASCADE_STATIC | FFX_BRIXELIZER_CASCADE_DYNAMIC;
+			
+			// Default initialization.
+			info.is_initialized = 1;
+			info.is_enabled     = 1;
+			
+			info.ioffset[0] = 0;
+			info.ioffset[1] = 0;
+			info.ioffset[2] = 0;
+
+			info.clipmap_offset[0] = 0;
+			info.clipmap_offset[1] = 0;
+			info.clipmap_offset[2] = 0;
+		}
+
+		memcpy(m_MappedConstants, cascadeData, sizeof(FfxBrixelizerCascadeInfo) * FFX_BRIXELIZER_MAX_CASCADES);
 
 		m_SdfAtlasState      = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 		m_ScratchBufferState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
@@ -324,17 +395,17 @@ namespace Brixelizer {
 		DirectX::XMMATRIX const& inverseProjection = camera.GetInverseProjectionMatrix();
 
 		memcpy(&debugVisDesc.inverseViewMatrix, &inverseView, sizeof(debugVisDesc.inverseViewMatrix));
-    	memcpy(&debugVisDesc.inverseProjectionMatrix, &inverseProjection, sizeof(debugVisDesc.inverseProjectionMatrix));
+		memcpy(&debugVisDesc.inverseProjectionMatrix, &inverseProjection, sizeof(debugVisDesc.inverseProjectionMatrix));
 		
 		debugVisDesc.tMin        = m_TMin;
 		debugVisDesc.tMax        = m_TMax;
 		debugVisDesc.sdfSolveEps = m_SdfSolveEps;
 		
 		debugVisDesc.startCascadeIndex = m_StartCascadeIdx; // Static instances.
-    	debugVisDesc.endCascadeIndex   = m_EndCascadeIdx;
+		debugVisDesc.endCascadeIndex   = m_EndCascadeIdx;
 
 		debugVisDesc.renderWidth  = 1280; // FIXME: DEBUG
-    	debugVisDesc.renderHeight = 720;
+		debugVisDesc.renderHeight = 720;
 
 		debugVisDesc.commandList = ffxGetCommandListDX12(cmdList);
 		debugVisDesc.cascadeDebugAABB[2 * FFX_BRIXELIZER_MAX_CASCADES + (FFX_BRIXELIZER_MAX_CASCADES - 1)] = FFX_BRIXELIZER_CASCADE_DEBUG_AABB_AABB_TREE;

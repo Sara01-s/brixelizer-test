@@ -4,9 +4,7 @@
 
 class Camera {
 public:
-	Camera(DirectX::XMFLOAT3 pos = { 0.0f, 0.0f, -5.0f })
-		: m_Position(pos) 
-	{
+	Camera() {
 		UpdateVectors();
 	}
 
@@ -117,7 +115,7 @@ private:
 	}
 
 private:
-	DirectX::XMFLOAT3 m_Position{};
+	DirectX::XMFLOAT3 m_Position { 0.0f, 5.0f, -10.0f };
 
 	DirectX::XMFLOAT3 m_Forward{};
 	DirectX::XMFLOAT3 m_Right{};

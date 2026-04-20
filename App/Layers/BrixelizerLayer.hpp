@@ -15,17 +15,17 @@
 
 #include "../Game/PlayerController.hpp"
 
-class AppLayer : public Core::Layer {
+class BrixelizerLayer : public Core::Layer {
 public:
-    AppLayer();
-    ~AppLayer();
+    BrixelizerLayer();
+    ~BrixelizerLayer();
 
     void OnUpdate(float deltaTime);
     void OnRender();
     void OnEvent(Core::Event& event);
 
 private:
-    std::unique_ptr<Shader> m_LightingShader;
+    std::unique_ptr<BrixelizerShader> m_LightingShader;
 
     Camera           m_Camera{};
     SceneBuilder     m_SceneBuilder{};

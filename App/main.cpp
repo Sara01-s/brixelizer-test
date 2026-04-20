@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "Layers/AppLayer.hpp"
+#include "Layers/BrixelizerLayer.hpp"
 
 int main() {
 	Core::ApplicationInfo const appInfo {
@@ -15,7 +16,7 @@ int main() {
 	try {
 		Core::Application app(appInfo);
 		
-		app.PushLayer<AppLayer>();
+		app.PushLayer<BrixelizerLayer>();
 		app.Run();
 	} catch (DXException const& e) {
 		std::cerr << "[CRITICAL ERROR] " << e.GetFullMessage() << '\n';

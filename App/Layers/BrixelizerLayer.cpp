@@ -1,4 +1,4 @@
-#include "AppLayer.hpp"
+#include "BrixelizerLayer.hpp"
 #include <Core/Application.hpp>
 
 static constexpr UINT  WIDTH  = 1280;
@@ -6,7 +6,7 @@ static constexpr UINT  HEIGHT = 720;
 static constexpr float FWIDTH  = static_cast<float>(WIDTH);
 static constexpr float FHEIGHT = static_cast<float>(HEIGHT);
 
-AppLayer::AppLayer() {
+BrixelizerLayer::BrixelizerLayer() {
 	auto& app      = Core::Application::Get();
 	auto* device   = app.GetDX().GetDevice();
 	auto* cmdList  = app.GetDX().GetCommandList();
@@ -15,7 +15,7 @@ AppLayer::AppLayer() {
 
 	m_BrixelizerContext = std::make_unique<Brixelizer::BrixelizerContext>(device, cmdQueue);
 
-	m_LightingShader = std::make_unique<Shader>(
+	m_LightingShader = std::make_unique<BrixelizerShader>(
 		device, L"D:\\projects\\brixelizer-test\\Engine\\Resources\\Shaders\\Lightning.hlsl"
 	);
 
@@ -30,22 +30,22 @@ AppLayer::AppLayer() {
 	app.GetDX().Present();
 }
 
-AppLayer::~AppLayer() {
+BrixelizerLayer::~BrixelizerLayer() {
 	for (auto const& meshInstance : m_BrixelizerMeshInstances) {
 		m_BrixelizerContext->UnloadMeshInstance(meshInstance);
 	}
 }
 
-void AppLayer::OnUpdate(float deltaTime) {
+void BrixelizerLayer::OnUpdate(float deltaTime) {
 	m_PlayerController.Update(deltaTime);
 	m_Input.EndFrame();
 }
 
-void AppLayer::OnEvent(Core::Event& event) {
+void BrixelizerLayer::OnEvent(Core::Event& event) {
 	m_Input.OnEvent(event);
 }
 
-void AppLayer::OnRender() {
+void BrixelizerLayer::OnRender() {
 	auto& app     = Core::Application::Get();
 	auto* device  = app.GetDX().GetDevice();
 	auto* cmdList = app.GetDX().GetCommandList();
@@ -68,10 +68,9 @@ void AppLayer::OnRender() {
 	cmdList->RSSetViewports(1, &viewport);
 	cmdList->RSSetScissorRects(1, &scissor);
 
-	D3D12_GPU_VIRTUAL_ADDRESS a{};
-	ID3D12DescriptorHeap* heaps[] = { srvHeap };
-	cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
-	m_LightingShader->Bind(cmdList);
+	D3D12_GPU_VIRTUAL_ADDRESS cascadeStructGPUAddress = m_BrixelizerContext->GetConstantsGPUAddress();
+	D3D12_GPU_VIRTUAL_ADDRESS todo{}; // TODO: PASAR LA DIRECCION EN GPU DE LA SCENE CONSTANT!!!!!!! PLS
+	m_LightingShader->Bind(cmdList, cascadeStructGPUAddress, todo, srvHeap);
 
 	SceneConstants scene = m_SceneBuilder.Build(m_Camera);
 	cmdList->SetGraphicsRoot32BitConstants(0, sizeof(SceneConstants) / 4, &scene, 0);

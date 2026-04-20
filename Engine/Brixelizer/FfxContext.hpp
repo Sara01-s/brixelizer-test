@@ -34,8 +34,6 @@ namespace Brixelizer {
 
 	private:
 		FfxInterface m_FfxInterface {};
-		bool m_ContextCreated {};
-
 		std::vector<uint8_t> m_ScratchMemory {};
 	};
 

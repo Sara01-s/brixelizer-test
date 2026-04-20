@@ -8,12 +8,15 @@
 namespace Brixelizer {
 
 	static Microsoft::WRL::ComPtr<ID3D12Resource> CreateCommittedBuffer(
-		ID3D12Device* device, 
-		uint64_t size, 
-		D3D12_RESOURCE_STATES initialState
+		ID3D12Device* device,
+		uint64_t size,
+		D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON
 	) {
-		D3D12_HEAP_PROPERTIES heap { .Type = D3D12_HEAP_TYPE_DEFAULT };
-		D3D12_RESOURCE_DESC   desc {
+		constexpr D3D12_HEAP_PROPERTIES heap {
+			.Type = D3D12_HEAP_TYPE_DEFAULT
+		};
+
+		D3D12_RESOURCE_DESC const desc {
 			.Dimension        = D3D12_RESOURCE_DIMENSION_BUFFER,
 			.Width            = size,
 			.Height           = 1,
@@ -24,13 +27,13 @@ namespace Brixelizer {
 			.Flags            = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
 		};
 
-		Microsoft::WRL::ComPtr<ID3D12Resource> resource {};
+		Microsoft::WRL::ComPtr<ID3D12Resource> resource{};
 		device->CreateCommittedResource(
-			&heap, 
+			&heap,
 			D3D12_HEAP_FLAG_NONE,
-			&desc, 
-			initialState, 
-			nullptr, 
+			&desc,
+			initialState,
+			nullptr, // pOptimizedClearValue.
 			IID_PPV_ARGS(&resource)
 		);
 
@@ -38,10 +41,13 @@ namespace Brixelizer {
 	}
 
 	static Microsoft::WRL::ComPtr<ID3D12Resource> CreateSdfAtlas(ID3D12Device* device) {
-		uint32_t const size = FFX_BRIXELIZER_STATIC_CONFIG_SDF_ATLAS_SIZE;
+		constexpr uint32_t size = FFX_BRIXELIZER_STATIC_CONFIG_SDF_ATLAS_SIZE;
 
-		D3D12_HEAP_PROPERTIES heap { .Type = D3D12_HEAP_TYPE_DEFAULT };
-		D3D12_RESOURCE_DESC   desc {
+		constexpr D3D12_HEAP_PROPERTIES heap {
+			.Type = D3D12_HEAP_TYPE_DEFAULT
+		};
+
+		constexpr D3D12_RESOURCE_DESC desc {
 			.Dimension        = D3D12_RESOURCE_DIMENSION_TEXTURE3D,
 			.Width            = size,
 			.Height           = size,
@@ -52,16 +58,16 @@ namespace Brixelizer {
 			.Flags            = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
 		};
 
-		Microsoft::WRL::ComPtr<ID3D12Resource> resource {};
+		Microsoft::WRL::ComPtr<ID3D12Resource> sdfAtlas{};
 		device->CreateCommittedResource(
-			&heap, 
+			&heap,
 			D3D12_HEAP_FLAG_NONE,
-			&desc, 
-			D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 
-			nullptr, 
-			IID_PPV_ARGS(&resource)
+			&desc,
+			D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+			nullptr, // pOptimizedClearValue.
+			IID_PPV_ARGS(&sdfAtlas)
 		);
 
-		return resource;
+		return sdfAtlas;
 	}
 }

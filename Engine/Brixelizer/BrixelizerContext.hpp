@@ -39,6 +39,7 @@ namespace Brixelizer {
 		ID3D12Resource*  GetBrickAABBs()  const noexcept { return m_BrickAABBs.Get(); }
 		FfxInterface     GetFfxInterface()      noexcept { return m_FfxContext.GetFfxInterface(); }
 		FfxBrixelizerContext* GetFfxBrixelizerContext() noexcept { return &m_BrixelizerContext; }
+		D3D12_GPU_VIRTUAL_ADDRESS GetConstantsGPUAddress() const noexcept { return m_ConstantsBuffer->GetGPUVirtualAddress(); }
 
 		ID3D12Resource** GetCascadeAABBTrees() { assert(false && "Not Implemented."); return nullptr; }
 		ID3D12Resource** GetCascadeBrickMaps() { assert(false && "Not Implemented."); return nullptr; }
@@ -61,29 +62,31 @@ namespace Brixelizer {
 		static constexpr FfxSurfaceFormat VERTEX_FORMAT { FFX_SURFACE_FORMAT_R32G32B32_FLOAT };
 
 		// FFX objects.
-		FfxContext           m_FfxContext       {};
-		FfxBrixelizerContext m_BrixelizerContext {};
+		FfxContext           m_FfxContext{};
+		FfxBrixelizerContext m_BrixelizerContext{};
 
 		// GPU resources.
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_SdfAtlas   {};
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_SdfAtlas{};
 		D3D12_RESOURCE_STATES m_SdfAtlasState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_BrickAABBs {};
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_BrickAABBs{};
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_ConstantsBuffer{};
+		void* m_MappedConstants { nullptr };
 
 		struct CascadeResources {
-			Microsoft::WRL::ComPtr<ID3D12Resource> aabbTree {};
-			Microsoft::WRL::ComPtr<ID3D12Resource> brickMap {};
+			Microsoft::WRL::ComPtr<ID3D12Resource> aabbTree{};
+			Microsoft::WRL::ComPtr<ID3D12Resource> brickMap{};
 		};
-		CascadeResources m_CascadeResources[FFX_BRIXELIZER_MAX_CASCADES] {};
-		uint32_t         m_CascadeResourcesCount {};
+		CascadeResources m_CascadeResources[FFX_BRIXELIZER_MAX_CASCADES]{};
+		uint32_t         m_CascadeResourcesCount{};
 
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_ScratchBuffer {};
-		size_t                                 m_ScratchBufferSize {};
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_ScratchBuffer{};
+		size_t                                 m_ScratchBufferSize{};
 		D3D12_RESOURCE_STATES m_ScratchBufferState = D3D12_RESOURCE_STATE_COMMON;
 
-		FfxBrixelizerUpdateDescription      m_UpdateDesc {};
-		FfxBrixelizerBakedUpdateDescription m_BakedDesc  {};
-		FfxBrixelizerStats                  m_Stats      {};
+		FfxBrixelizerUpdateDescription      m_UpdateDesc{};
+		FfxBrixelizerBakedUpdateDescription m_BakedDesc{};
+		FfxBrixelizerStats                  m_Stats{};
 		
 		// For Debug Visualization:
 		float m_TMin { 0.0f };

@@ -4,10 +4,10 @@ cbuffer SceneConstants : register(b0) {
 	row_major float4x4 projection;
 
 	float3 lightPosition;
-	float  pad0;
+	float  _padding0;
 
 	float3 cameraPosition;
-	float  pad1;
+	float  _padding1;
 };
 
 struct VSInput {
@@ -24,7 +24,6 @@ struct PSInput {
 };
 
 Texture2D    _AlbedoTex : register(t0);
-
 SamplerState _Sampler   : register(s0);
 
 PSInput VSMain(VSInput input) {

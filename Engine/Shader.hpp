@@ -19,7 +19,8 @@ public:
 		CD3DX12_ROOT_PARAMETER rootParameters[2];
 
 		// cbuffer b0.
-		rootParameters[0].InitAsConstants(sizeof(SceneConstants) / 4, 0);
+		constexpr int bufferID = 0;
+		rootParameters[0].InitAsConstants(sizeof(SceneConstants) / 4, bufferID);
 
 		// texture t0.
 		CD3DX12_DESCRIPTOR_RANGE texRange{};
@@ -46,7 +47,7 @@ public:
 
 		ComPtr<ID3DBlob> signature{}, error{};
 		HRESULT hrSig = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error);
-		
+
 		if (FAILED(hrSig)) {
 			if (error) {
 				std::cout << "RootSig Serialize Error: " << (char*)error->GetBufferPointer() << std::endl;
@@ -80,7 +81,7 @@ public:
 			if (errorBlob) {
 				std::cout << "PS Error: " << (char*)errorBlob->GetBufferPointer() << std::endl;
 			}
-			
+
 			DX_THROW(hrPS);
 		}
 
@@ -97,10 +98,10 @@ public:
 		psoDesc.pRootSignature = m_RootSignature.Get();
 		psoDesc.VS = CD3DX12_SHADER_BYTECODE(vsBlob.Get());
 		psoDesc.PS = CD3DX12_SHADER_BYTECODE(psBlob.Get());
-		
+
 		psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 		psoDesc.RasterizerState.FrontCounterClockwise = FALSE; // CW or CCW rendering.
-		
+
 		psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 		psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 		psoDesc.SampleMask = UINT_MAX;
@@ -109,7 +110,7 @@ public:
 		psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 		psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 		psoDesc.SampleDesc.Count = 1;
-		
+
 		// Create PSO!!
 		HRESULT hr = device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PSO));
 
@@ -121,7 +122,7 @@ public:
 
 	void Bind(ID3D12GraphicsCommandList* cmdList) {
 		assert(m_PSO && "PSO is null, was Shader::Compile() called?");
-		
+
 		if (m_PSO && m_RootSignature) {
 			cmdList->SetGraphicsRootSignature(m_RootSignature.Get());
 			cmdList->SetPipelineState(m_PSO.Get());
