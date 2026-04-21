@@ -103,16 +103,23 @@ private:
         ComPtr<ID3DBlob> errorBlob{};
 
         // Vertex Shader.
+        // TODO: SARA DEL FUTURO USA LA FUNCION QUE HICISTE en ShaderCompiler.
         HRESULT hrVS = D3DCompileFromFile(path.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_0", compileFlags, 0, vsBlob, &errorBlob);
         if (FAILED(hrVS)) {
-            if (errorBlob) std::cout << "VS Error: " << (char*)errorBlob->GetBufferPointer() << std::endl;
+            if (errorBlob) {
+                std::cout << "VS Error: " << (char*)errorBlob->GetBufferPointer() << '\n';
+            }
+
             DX_THROW(hrVS);
         }
 
         // Pixel Shader.
         HRESULT hrPS = D3DCompileFromFile(path.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_0", compileFlags, 0, psBlob, &errorBlob);
         if (FAILED(hrPS)) {
-            if (errorBlob) std::cout << "PS Error: " << (char*)errorBlob->GetBufferPointer() << std::endl;
+            if (errorBlob) {
+                std::cout << "PS Error: " << (char*)errorBlob->GetBufferPointer() << '\n';
+            }
+
             DX_THROW(hrPS);
         }
     }

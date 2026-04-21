@@ -16,7 +16,7 @@ BrixelizerLayer::BrixelizerLayer() {
 	m_BrixelizerContext = std::make_unique<Brixelizer::BrixelizerContext>(device, cmdQueue);
 
 	m_LightingShader = std::make_unique<BrixelizerShader>(
-		device, L"D:\\projects\\brixelizer-test\\Engine\\Resources\\Shaders\\Lightning.hlsl"
+		device, L"D:\\projects\\brixelizer-test\\Engine\\Resources\\Shaders\\BrixelizerSDFVisualization.hlsl"
 	);
 
 	app.GetDX().BeginFrame();
@@ -68,12 +68,11 @@ void BrixelizerLayer::OnRender() {
 	cmdList->RSSetViewports(1, &viewport);
 	cmdList->RSSetScissorRects(1, &scissor);
 
+	D3D12_GPU_VIRTUAL_ADDRESS sceneConstantGPUAddress = m_SceneBuilder.GetSceneConstantBufferGPUAddress();
 	D3D12_GPU_VIRTUAL_ADDRESS cascadeStructGPUAddress = m_BrixelizerContext->GetConstantsGPUAddress();
-	D3D12_GPU_VIRTUAL_ADDRESS todo{}; // TODO: PASAR LA DIRECCION EN GPU DE LA SCENE CONSTANT!!!!!!! PLS
-	m_LightingShader->Bind(cmdList, cascadeStructGPUAddress, todo, srvHeap);
+	m_LightingShader->Bind(cmdList, sceneConstantGPUAddress, cascadeStructGPUAddress, srvHeap);
 
 	SceneConstants scene = m_SceneBuilder.Build(m_Camera);
-	cmdList->SetGraphicsRoot32BitConstants(0, sizeof(SceneConstants) / 4, &scene, 0);
 
 	UINT increment = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 

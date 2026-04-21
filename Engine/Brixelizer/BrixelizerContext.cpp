@@ -102,7 +102,7 @@ namespace Brixelizer {
 
 		// Constants buffer.
 		size_t const bufferSize = (sizeof(FfxBrixelizerCascadeInfo) * FFX_BRIXELIZER_MAX_CASCADES + 255) & ~255;
-		m_ConstantsBuffer = CreateCommittedBuffer(device, bufferSize);
+		m_ConstantsBuffer = CreateCommittedBuffer(device, bufferSize, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_FLAG_NONE);
 		m_ConstantsBuffer->Map(0, nullptr, &m_MappedConstants);
 
 		BRIX_LOG("=== Constructor END ===");

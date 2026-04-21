@@ -12,6 +12,7 @@
 #include <Input/UserInput.hpp>
 #include <Scene/SceneBuilder.hpp>
 #include <Brixelizer/BrixelizerContext.hpp>
+#include <Core/Application.hpp>
 
 #include "../Game/PlayerController.hpp"
 
@@ -28,7 +29,7 @@ private:
     std::unique_ptr<Shader> m_LightingShader;
 
     Camera           m_Camera{};
-    SceneBuilder     m_SceneBuilder{};
+    SceneBuilder     m_SceneBuilder { Core::Application::Get().GetDX().GetDevice() };
     Input::UserInput m_Input{};
     PlayerController m_PlayerController { m_Camera, m_Input };
     Model            m_Model;

@@ -10,11 +10,11 @@ namespace Brixelizer {
 	static Microsoft::WRL::ComPtr<ID3D12Resource> CreateCommittedBuffer(
 		ID3D12Device* device,
 		uint64_t size,
-		D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON
+		D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON,
+		D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT,
+		D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
 	) {
-		constexpr D3D12_HEAP_PROPERTIES heap {
-			.Type = D3D12_HEAP_TYPE_DEFAULT
-		};
+		CD3DX12_HEAP_PROPERTIES const heapProps(heapType);
 
 		D3D12_RESOURCE_DESC const desc {
 			.Dimension        = D3D12_RESOURCE_DIMENSION_BUFFER,
@@ -24,12 +24,12 @@ namespace Brixelizer {
 			.MipLevels        = 1,
 			.SampleDesc       = { 1, 0 },
 			.Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-			.Flags            = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+			.Flags            = flags,
 		};
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> resource{};
 		device->CreateCommittedResource(
-			&heap,
+			&heapProps,
 			D3D12_HEAP_FLAG_NONE,
 			&desc,
 			initialState,

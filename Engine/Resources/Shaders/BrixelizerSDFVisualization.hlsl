@@ -1,6 +1,7 @@
 #define FFX_BRIXELIZER_TRAVERSAL_EPS 0.001f
 #define FFX_HLSL
-#include "../../Plugins/FidelityFX/include/FidelityFX/gpu/brixelizer/ffx_brixelizer_trace_ops.h"
+#define FFX_GPU
+#include "gpu/brixelizer/ffx_brixelizer_trace_ops.h"
 
 cbuffer SceneConstants : register(b0) {
 	row_major float4x4 model;
@@ -60,7 +61,7 @@ FfxUInt32 LoadBricksAABB(FfxUInt32 elementIndex) {
 }
 
 FfxFloat32 SampleSDFAtlas(FfxFloat32x3 uvw) {
-    return _SDFAtlasTex.SampleLevel(_LinearClampSample, uvw, 0);
+    return _SDFAtlasTex.SampleLevel(_LinearClampSampler, uvw, 0);
 }
 
 FfxUInt32 LoadCascadeBrickMapArrayUniform(FfxUInt32 cascadeID, FfxUInt32 elementIndex) {
@@ -68,7 +69,7 @@ FfxUInt32 LoadCascadeBrickMapArrayUniform(FfxUInt32 cascadeID, FfxUInt32 element
 }
 
 float3 ToGridSpace(float3 worldPos, uint cascadeIndex) {
-    FfxBrixelizerCascadeInfo info = _BrixelizerCascadesInfo[cascadeIndex];
+    FfxBrixelizerCascadeInfo info = _BrixelizerCascadesInfo.cascades[cascadeIndex];
     return (worldPos - info.grid_min) * info.ivoxel_size;
 }
 // ------------------------------------------------
