@@ -1,0 +1,13 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "dll",
+      "exe": "",
+      "project": "CMakeLists.txt",
+      "projectTarget": "assimp-vc143-mtd.dll (_deps\\assimp-build\\bin\\Debug\\assimp-vc143-mtd.dll)",
+      "name": "assimp-vc143-mtd.dll (_deps\\assimp-build\\bin\\Debug\\assimp-vc143-mtd.dll)"
+    }
+  ]
+}

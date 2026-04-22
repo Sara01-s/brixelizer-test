@@ -1,0 +1,13 @@
+{
+  "OutputFoldersPerTargetSystem": {
+    "Local Machine": [
+      "build\\MSVCx64",
+      "out\\install\\MSVCx64"
+    ]
+  },
+  "ExpandedNodes": [
+    ""
+  ],
+  "SelectedNode": "\\D:\\projects\\brixelizer-test\\CMakeLists.txt\\dx12engine.exe (Debug\\dx12engine.exe)\\CMakeLists.txt",
+  "PreviewInSolutionExplorer": false
+}

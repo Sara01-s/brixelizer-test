@@ -6,28 +6,40 @@ static constexpr UINT  HEIGHT = 720;
 static constexpr float FWIDTH  = static_cast<float>(WIDTH);
 static constexpr float FHEIGHT = static_cast<float>(HEIGHT);
 
+namespace fs = std::filesystem;
+
 BrixelizerLayer::BrixelizerLayer() {
-	auto& app      = Core::Application::Get();
-	auto* device   = app.GetDX().GetDevice();
-	auto* cmdList  = app.GetDX().GetCommandList();
-	auto* cmdQueue = app.GetDX().GetCommandQueue();
-	auto* srvHeap  = app.GetDX().GetSrvHeap();
+    auto& app      = Core::Application::Get();
+    auto* device   = app.GetDX().GetDevice();
+    auto* cmdList  = app.GetDX().GetCommandList();
+    auto* cmdQueue = app.GetDX().GetCommandQueue();
+    auto* srvHeap  = app.GetDX().GetSrvHeap();
 
-	m_BrixelizerContext = std::make_unique<Brixelizer::BrixelizerContext>(device, cmdQueue);
+    m_BrixelizerContext = std::make_unique<Brixelizer::BrixelizerContext>(device, cmdQueue);
 
-	m_LightingShader = std::make_unique<BrixelizerShader>(
-		device, L"..\\Engine\\Resources\\Shaders\\BrixelizerSDFVisualization.hlsl"
-	);
+    fs::path resources = fs::path(RESOURCES_PATH);
 
-	app.GetDX().BeginFrame();
+    fs::path shaderPath = resources / "Shaders" / "BrixelizerSDFVisualization.hlsl";
+    fs::path modelPath  = resources / "Sponza" / "sponza.obj";
 
-	m_Model.Load(device, cmdList, srvHeap, "..\\Engine\\Resources\\Sponza\\sponza.obj");
+    std::wcout << L"Shader: " << shaderPath << L" exists =" << fs::exists(shaderPath) << '\n';
+    std::wcout << L"Model : " << modelPath  << L" exists =" << fs::exists(modelPath)  << '\n';
 
-	for (auto const& mesh : m_Model.GetMeshes()) {
-		m_BrixelizerMeshInstances.push_back(m_BrixelizerContext->SubmitMeshInstance(*mesh));
-	}
+    m_LightingShader = std::make_unique<BrixelizerShader>(
+        device, shaderPath.wstring().c_str()
+    );
 
-	app.GetDX().Present();
+    app.GetDX().BeginFrame();
+
+    m_Model.Load(device, cmdList, srvHeap, modelPath.string().c_str());
+
+    for (auto const& mesh : m_Model.GetMeshes()) {
+        m_BrixelizerMeshInstances.push_back(
+            m_BrixelizerContext->SubmitMeshInstance(*mesh)
+        );
+    }
+
+    app.GetDX().Present();
 }
 
 BrixelizerLayer::~BrixelizerLayer() {

@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.10.0)
 project(dx12engine VERSION 0.1.0 LANGUAGES C CXX)
 
+add_compile_definitions(RESOURCES_PATH=L"${CMAKE_SOURCE_DIR}/Engine/Resources")
+add_compile_definitions(FIDELITY_FX_PATH=L"${CMAKE_SOURCE_DIR}/Engine/Plugins/FidelityFX")
+
 if(POLICY CMP0175)
   cmake_policy(SET CMP0175 NEW)
 endif()

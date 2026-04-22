@@ -8,144 +8,156 @@
 #include <d3d12.h>
 #include <stdexcept>
 #include <process.h>
+#include <filesystem>
 
 class DXCShaderCompiler {
 public:
-DXCShaderCompiler() {
-        const char* vulkanSdk = getenv("VULKAN_SDK");
-        if (!vulkanSdk) throw std::runtime_error("VULKAN_SDK not set");
+	DXCShaderCompiler() {
+		const char* vulkanSdk = getenv("VULKAN_SDK");
+		if (!vulkanSdk) {
+			vulkanSdk = getenv("VK_SDK_PATH"); // Default env variable when installing Vulkan SDK.
+		}
 
-        std::string path = std::string(vulkanSdk) + "/bin/dxc.exe";
-        m_DxcPath = std::wstring(path.begin(), path.end());
-    }
+		if (!vulkanSdk) {
+			throw std::runtime_error("VULKAN_SDK or VR_SDK_PATH not set.");
+		}
 
-    void CompileToFile(
-        const wchar_t* filename,
-        const wchar_t* entrypoint,
-        const wchar_t* profile,
-        const std::wstring& outFile,
-        const std::vector<std::wstring>& includeDirs
-    ) {
-        std::wstring args = L"-E main ";
-        args += std::wstring(L"/D") + entrypoint + L"=main";
-        args += L" -T ";
-        args += profile;
-        args += L" -HV 2021";
+		std::filesystem::path path = std::filesystem::path(vulkanSdk) / "Bin" / "dxc.exe";
+
+		if (!std::filesystem::exists(path)) {
+			throw std::runtime_error("dxc.exe not found at: " + path.generic_string());
+		}
+
+		m_DxcPath = path.wstring();
+	}
+
+	void CompileToFile(
+		const wchar_t* filename,
+		const wchar_t* entrypoint,
+		const wchar_t* profile,
+		const std::wstring& outFile,
+		const std::vector<std::wstring>& includeDirs
+	) {
+		std::wstring args = L"-E main ";
+		args += std::wstring(L"/D") + entrypoint + L"=main";
+		args += L" -T ";
+		args += profile;
+		args += L" -HV 2021";
 #if defined(_DEBUG)
-        args += L" -Od -Zi -Gis";
+		args += L" -Od -Zi -Gis";
 #endif
-        args += L" -Fo ";
-        args += outFile;
+		args += L" -Fo ";
+		args += outFile;
 
-        for (const auto& dir : includeDirs) {
-            args += L" -I ";
-            args += dir;
-        }
-        args += L" ";
-        args += filename;
+		for (const auto& dir : includeDirs) {
+			args += L" -I ";
+			args += dir;
+		}
+		args += L" ";
+		args += filename;
 
-        SECURITY_ATTRIBUTES sa = {};
-        sa.nLength = sizeof(sa);
-        sa.bInheritHandle = TRUE;
+		SECURITY_ATTRIBUTES sa = {};
+		sa.nLength = sizeof(sa);
+		sa.bInheritHandle = TRUE;
 
-        HANDLE hOutRead, hOutWrite;
-        HANDLE hErrRead, hErrWrite;
-        CreatePipe(&hOutRead, &hOutWrite, &sa, 0);
-        CreatePipe(&hErrRead, &hErrWrite, &sa, 0);
-        SetHandleInformation(hOutRead, HANDLE_FLAG_INHERIT, 0);
-        SetHandleInformation(hErrRead, HANDLE_FLAG_INHERIT, 0);
+		HANDLE hOutRead, hOutWrite;
+		HANDLE hErrRead, hErrWrite;
+		CreatePipe(&hOutRead, &hOutWrite, &sa, 0);
+		CreatePipe(&hErrRead, &hErrWrite, &sa, 0);
+		SetHandleInformation(hOutRead, HANDLE_FLAG_INHERIT, 0);
+		SetHandleInformation(hErrRead, HANDLE_FLAG_INHERIT, 0);
 
-        STARTUPINFOW si = {};
-        si.cb = sizeof(si);
-        si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
-        si.wShowWindow = SW_HIDE;
-        si.hStdOutput = hOutWrite;
-        si.hStdError = hErrWrite;
+		STARTUPINFOW si = {};
+		si.cb = sizeof(si);
+		si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+		si.wShowWindow = SW_HIDE;
+		si.hStdOutput = hOutWrite;
+		si.hStdError = hErrWrite;
 
-        PROCESS_INFORMATION pi = {};
-        if (!CreateProcessW(m_DxcPath.c_str(), (wchar_t*)args.c_str(), nullptr, nullptr, TRUE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) {
-            CloseHandle(hOutRead);
-            CloseHandle(hOutWrite);
-            CloseHandle(hErrRead);
-            CloseHandle(hErrWrite);
-            throw std::runtime_error("Failed to create dxc.exe process");
-        }
+		PROCESS_INFORMATION pi = {};
+		if (!CreateProcessW(m_DxcPath.c_str(), (wchar_t*)args.c_str(), nullptr, nullptr, TRUE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) {
+			CloseHandle(hOutRead);
+			CloseHandle(hOutWrite);
+			CloseHandle(hErrRead);
+			CloseHandle(hErrWrite);
+			throw std::runtime_error("Failed to create dxc.exe process");
+		}
 
-        CloseHandle(hOutWrite);
-        CloseHandle(hErrWrite);
+		CloseHandle(hOutWrite);
+		CloseHandle(hErrWrite);
 
-        char buf[4096];
-        DWORD bytes;
+		char buf[4096];
+		DWORD bytes;
 
-        while (ReadFile(hOutRead, buf, sizeof(buf) - 1, &bytes, NULL) && bytes > 0) {
-            buf[bytes] = 0;
-            OutputDebugStringA(buf);
-        }
-        while (ReadFile(hErrRead, buf, sizeof(buf) - 1, &bytes, NULL) && bytes > 0) {
-            buf[bytes] = 0;
-            OutputDebugStringA(buf);
-        }
+		while (ReadFile(hOutRead, buf, sizeof(buf) - 1, &bytes, NULL) && bytes > 0) {
+			buf[bytes] = 0;
+			OutputDebugStringA(buf);
+		}
+		while (ReadFile(hErrRead, buf, sizeof(buf) - 1, &bytes, NULL) && bytes > 0) {
+			buf[bytes] = 0;
+			OutputDebugStringA(buf);
+		}
 
-        CloseHandle(hOutRead);
-        CloseHandle(hErrRead);
+		CloseHandle(hOutRead);
+		CloseHandle(hErrRead);
 
-        WaitForSingleObject(pi.hProcess, INFINITE);
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
-    }
+		WaitForSingleObject(pi.hProcess, INFINITE);
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+	}
 
-    Microsoft::WRL::ComPtr<ID3DBlob> Compile(
-        const wchar_t* filename,
-        const wchar_t* entrypoint,
-        const wchar_t* profile,
-        const std::vector<std::wstring>& includeDirs
-    ) {
-        wchar_t tempDir[MAX_PATH];
-        GetTempPathW(MAX_PATH, tempDir);
-        std::wstring outPath = std::wstring(tempDir) + L"shader_compile.cso";
+	Microsoft::WRL::ComPtr<ID3DBlob> Compile(
+		const wchar_t* filename,
+		const wchar_t* entrypoint,
+		const wchar_t* profile,
+		const std::vector<std::wstring>& includeDirs
+	) {
+		wchar_t tempDir[MAX_PATH];
+		GetTempPathW(MAX_PATH, tempDir);
+		std::wstring outPath = std::wstring(tempDir) + L"shader_compile.cso";
 
-        CompileToFile(filename, entrypoint, profile, outPath, includeDirs);
-        return ReadFileBlob(outPath);
-    }
+		CompileToFile(filename, entrypoint, profile, outPath, includeDirs);
+		return ReadFileBlob(outPath);
+	}
 
-    Microsoft::WRL::ComPtr<ID3DBlob> ReadFileBlob(const std::wstring& path) {
-        WIN32_FILE_ATTRIBUTE_DATA attr;
-        if (!GetFileAttributesExW(path.c_str(), GetFileExInfoStandard, &attr)) {
-            throw std::runtime_error("Output file does not exist");
-        }
+	Microsoft::WRL::ComPtr<ID3DBlob> ReadFileBlob(const std::wstring& path) {
+		WIN32_FILE_ATTRIBUTE_DATA attr;
+		if (!GetFileAttributesExW(path.c_str(), GetFileExInfoStandard, &attr)) {
+			throw std::runtime_error("Output file does not exist");
+		}
 
-        std::ifstream file(path, std::ios::binary | std::ios::ate);
-        if (!file) {
-            throw std::runtime_error("Failed to read file");
-        }
+		std::ifstream file(path, std::ios::binary | std::ios::ate);
+		if (!file) {
+			throw std::runtime_error("Failed to read file");
+		}
 
-        size_t size = file.tellg();
-        file.seekg(0, std::ios::beg);
-        std::vector<char> buffer(size);
-        file.read(buffer.data(), size);
-        file.close();
+		size_t size = file.tellg();
+		file.seekg(0, std::ios::beg);
+		std::vector<char> buffer(size);
+		file.read(buffer.data(), size);
+		file.close();
 
-        DeleteFileW(path.c_str());
+		DeleteFileW(path.c_str());
 
-        struct Blob : ID3DBlob {
-            char* data = nullptr;
-            SIZE_T sz = 0;
+		struct Blob : ID3DBlob {
+			char* data = nullptr;
+			SIZE_T sz = 0;
 
-            virtual HRESULT QueryInterface(REFIID, void**) { return S_OK; }
-            virtual ULONG AddRef() { return 1; }
-            virtual ULONG Release() { delete[] data; delete this; return 0; }
-            virtual LPVOID GetBufferPointer() { return data; }
-            virtual SIZE_T GetBufferSize() { return sz; }
-        };
+			virtual HRESULT QueryInterface(REFIID, void**) { return S_OK; }
+			virtual ULONG AddRef() { return 1; }
+			virtual ULONG Release() { delete[] data; delete this; return 0; }
+			virtual LPVOID GetBufferPointer() { return data; }
+			virtual SIZE_T GetBufferSize() { return sz; }
+		};
 
-        Blob* b = new Blob();
-        b->data = new char[buffer.size()];
-        b->sz = buffer.size();
-        memcpy(b->data, buffer.data(), buffer.size());
+		Blob* b = new Blob();
+		b->data = new char[buffer.size()];
+		b->sz = buffer.size();
+		memcpy(b->data, buffer.data(), buffer.size());
 
-        return Microsoft::WRL::ComPtr<ID3DBlob>(b);
-    }
+		return Microsoft::WRL::ComPtr<ID3DBlob>(b);
+	}
 
 private:
-    std::wstring m_DxcPath;
+	std::wstring m_DxcPath;
 };
