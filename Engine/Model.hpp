@@ -37,7 +37,8 @@ public:
 			return;
 		}
 
-		m_Directory = path.substr(0, path.find_last_of('/'));
+		std::filesystem::path p(path);
+		m_Directory = p.parent_path().string();
 
 		std::map<unsigned int, int> materialToSrvIndex;
 		LoadMaterials(device, cmdList, srvHeap, scene, materialToSrvIndex);
