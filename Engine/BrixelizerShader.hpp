@@ -60,9 +60,9 @@ private:
 		// b1: Brixelizer Cascade Info (CBV)
 		rootParameters[1].InitAsConstantBufferView(1);
 
-		// t0, t1, t2, t3, t4.
+		// t2, t3, t4, t5, t6.
 		CD3DX12_DESCRIPTOR_RANGE texRange{};
-		texRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, 0);
+		texRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, 2);
 		rootParameters[2].InitAsDescriptorTable(1, &texRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
 		// Linear wrap sampler.
@@ -73,7 +73,7 @@ private:
 		wrapSampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 		
 		// Linear clamp sampler.
-		CD3DX12_STATIC_SAMPLER_DESC clampSampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR);
+		CD3DX12_STATIC_SAMPLER_DESC clampSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR);
 		clampSampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
 		clampSampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
 		clampSampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
@@ -82,7 +82,7 @@ private:
 		D3D12_STATIC_SAMPLER_DESC const samplers[2] = { wrapSampler, clampSampler };
 
 		CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc{};
-		rootSigDesc.Init(_countof(rootParameters), rootParameters, 1, samplers, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		rootSigDesc.Init(_countof(rootParameters), rootParameters, 2, samplers, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 		ComPtr<ID3DBlob> signature{}, error{};
 		HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error);
